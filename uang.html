@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Manajemen Keuangan Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .form-input {
+            background-color: #374151; border: 1px solid #4b5563; color: white;
+            border-radius: 0.5rem; padding: 0.75rem 1rem; width: 100%; transition: border-color 0.2s;
+        }
+        .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-secondary { background-color: #4b5563; color: white; }
+        .btn-secondary:hover { background-color: #6b7280; }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .card { background-color: #1f2937; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .progress-bg { background-color: #374151; }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+        .tab-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; border: 1px solid transparent; }
+        .tab-btn.active { background-color: #3b82f6; color: white; }
+        .tab-btn:not(.active) { color: #9ca3af; background-color: #374151; }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container py-2 px-4 pt-4 py-8">
+            <a href="./index.html" class="absolute top-3 left-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors duration-200 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                    </svg>
+                    <span>Kembali ke Jadwal</span>
+                </a>
+                <button id="reset-data-btn" class="absolute top-3 right-4  bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors duration-200 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Reset Data</span>
+                </button>
+        </div>
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 xl:p-12 max-w-7xl">
+        <header class="text-center mb-10 relative">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Manajemen Keuangan Pribadi</h1>
+            <p class="text-lg md:text-xl text-gray-400">Ayo semangat nabung nya<br>jangan boros boros biar kaya.</p>
+        </header>
+
+        <main class="space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Kolom Kiri (Utama & Kantong) -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Kantong Utama -->
+                    <section class="card">
+                        <h2 class="text-2xl md:text-3xl font-semibold mb-4">Kantong Utama</h2>
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div class="flex-grow mb-4 md:mb-0">
+                                <div id="main-balance-view">
+                                    <p class="text-gray-400">Total Saldo Utama</p>
+                                    <div class="flex items-center gap-3">
+                                        <p id="main-balance" class="text-4xl font-bold text-green-400">Rp 0</p>
+                                        <button id="edit-main-balance-btn" class="text-gray-400 hover:text-white" title="Ubah Saldo Utama">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <form id="edit-main-balance-form" class="hidden items-center gap-2">
+                                    <input type="number" id="edit-main-balance-input" class="form-input w-48" required min="0">
+                                    <button type="submit" class="btn btn-primary text-sm py-2 px-3">Simpan</button>
+                                    <button type="button" id="cancel-edit-main-balance-btn" class="btn btn-secondary text-sm py-2 px-3">Batal</button>
+                                </form>
+                            </div>
+                            <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                                <form id="add-income-form" class="flex items-center flex-wrap sm:flex-nowrap justify-end gap-2 w-full">
+                                    <input type="text" id="income-note" placeholder="Sumber (cth: Gaji)" class="form-input w-full sm:w-48">
+                                    <input type="number" id="income-amount" placeholder="Jumlah" class="form-input w-full sm:w-32" required min="1">
+                                    <button type="submit" class="btn btn-primary whitespace-nowrap w-full sm:w-auto">Tambah</button>
+                                </form>
+                                <div id="autofill-container" class="flex gap-2">
+                                    <button data-amount="500000" class="btn btn-secondary text-xs py-1 px-3">100rb</button>
+                                    <button data-amount="500000" class="btn btn-secondary text-xs py-1 px-3">200rb</button>
+                                    <button data-amount="500000" class="btn btn-secondary text-xs py-1 px-3">500rb</button>
+                                    <button data-amount="1000000" class="btn btn-secondary text-xs py-1 px-3">1jt</button>
+                                    <button data-amount="2000000" class="btn btn-secondary text-xs py-1 px-3">2jt</button>
+                                    <button data-amount="500000" class="btn btn-secondary text-xs py-1 px-3">3jt</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Daftar Kantong -->
+                    <section>
+                        <h2 class="text-2xl md:text-3xl font-semibold mb-4">Daftar Kantong</h2>
+                        <div id="pockets-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Kantong dinamis -->
+                        </div>
+                    </section>
+                    
+                    <!-- Buat Kantong Baru -->
+                    <section class="card">
+                        <h2 class="text-2xl md:text-3xl font-semibold mb-4">Buat Kantong Baru</h2>
+                        <form id="add-pocket-form" class="space-y-4">
+                            <input type="text" id="new-pocket-name" placeholder="Nama Kantong (cth: Dana Darurat)" class="form-input" required>
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <input type="radio" id="type-spending" name="pocket-type" value="spending" class="hidden" checked>
+                                    <label for="type-spending" class="tab-btn active w-full block text-center">Anggaran</label>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="radio" id="type-saving" name="pocket-type" value="saving" class="hidden">
+                                    <label for="type-saving" class="tab-btn w-full block text-center">Tujuan</label>
+                                </div>
+                            </div>
+                            <div id="budget-input-container">
+                                <input type="number" id="new-pocket-budget" placeholder="Budget Bulanan (opsional)" class="form-input" min="0">
+                            </div>
+                            <div id="goal-input-container" class="hidden">
+                                <input type="number" id="new-pocket-goal" placeholder="Target Tujuan Tabungan" class="form-input" min="0">
+                            </div>
+                            <button type="submit" class="btn btn-secondary w-full">Tambah Kantong</button>
+                        </form>
+                    </section>
+                </div>
+
+                <!-- Kolom Kanan (Riwayat) -->
+                <div class="lg:col-span-1 space-y-8">
+                    <!-- Riwayat Transaksi -->
+                    <section class="card">
+                        <h2 class="text-2xl md:text-3xl font-semibold mb-4">Riwayat Transaksi</h2>
+                        <div id="transactions-container" class="space-y-3 max-h-96 lg:max-h-[30rem] overflow-y-auto pr-2">
+                            <p class="text-gray-400 text-center">Belum ada transaksi.</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            
+            <!-- Alokasi Dana di Bawah -->
+            <section class="card">
+                <h2 class="text-2xl md:text-3xl font-semibold mb-4">Alokasi Dana</h2>
+                <div class="h-64 lg:h-80 relative">
+                    <canvas id="pockets-chart"></canvas>
+                </div>
+                <p id="chart-no-data" class="text-center text-gray-400 mt-4 hidden">Alokasikan dana untuk melihat visualisasi.</p>
+            </section>
+        </main>
+        <footer>
+            <div class="text-center text-gray-400  py-2 pt-4">
+               <p>Semangat kuliah nya bos!</p>
+               <p>@acarya___ <br><a href="https://acaryawibawantra.github.io/">acaryawibawantra.github.io</a></p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal Notifikasi -->
+    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="card max-w-sm w-full text-center">
+            <p id="notification-message" class="mb-4 text-lg"></p>
+            <div id="notification-actions">
+                <button id="close-notification" class="btn btn-primary">Tutup</button>
+            </div>
+        </div>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === DOM ELEMENTS ===
+    const mainBalanceEl = document.getElementById('main-balance');
+    const mainBalanceView = document.getElementById('main-balance-view');
+    const editMainBalanceBtn = document.getElementById('edit-main-balance-btn');
+    const editMainBalanceForm = document.getElementById('edit-main-balance-form');
+    const editMainBalanceInput = document.getElementById('edit-main-balance-input');
+    const cancelEditMainBalanceBtn = document.getElementById('cancel-edit-main-balance-btn');
+    const addIncomeForm = document.getElementById('add-income-form');
+    const incomeAmountInput = document.getElementById('income-amount');
+    const incomeNoteInput = document.getElementById('income-note');
+    const autofillContainer = document.getElementById('autofill-container');
+    const pocketsContainer = document.getElementById('pockets-container');
+    const addPocketForm = document.getElementById('add-pocket-form');
+    const newPocketNameInput = document.getElementById('new-pocket-name');
+    const budgetInputContainer = document.getElementById('budget-input-container');
+    const goalInputContainer = document.getElementById('goal-input-container');
+    const newPocketBudgetInput = document.getElementById('new-pocket-budget');
+    const newPocketGoalInput = document.getElementById('new-pocket-goal');
+    const chartCanvas = document.getElementById('pockets-chart');
+    const chartNoDataEl = document.getElementById('chart-no-data');
+    const transactionsContainer = document.getElementById('transactions-container');
+    const notificationModal = document.getElementById('notification-modal');
+    const notificationMessageEl = document.getElementById('notification-message');
+    const notificationActionsEl = document.getElementById('notification-actions');
+    const closeNotificationBtn = document.getElementById('close-notification');
+    const resetDataBtn = document.getElementById('reset-data-btn');
+
+    let pocketsChart = null;
+
+    // === APPLICATION STATE ===
+    let state = {
+        mainBalance: 0,
+        pockets: [],
+        transactions: []
+    };
+    
+    const initialState = JSON.parse(JSON.stringify(state));
+
+    // === UTILITY FUNCTIONS ===
+    const formatCurrency = (amount) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+    const formatDate = (timestamp) => new Date(timestamp).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    
+    const showNotification = (message, actions = null) => {
+        notificationMessageEl.textContent = message;
+        notificationActionsEl.innerHTML = ''; // Clear previous actions
+
+        if (actions) {
+            actions.forEach(action => {
+                const button = document.createElement('button');
+                button.textContent = action.text;
+                button.className = action.class;
+                button.addEventListener('click', () => {
+                    action.handler();
+                    notificationModal.classList.add('hidden');
+                });
+                notificationActionsEl.appendChild(button);
+            });
+        } else {
+            const closeButton = document.createElement('button');
+            closeButton.textContent = 'Tutup';
+            closeButton.className = 'btn btn-primary';
+            closeButton.addEventListener('click', () => notificationModal.classList.add('hidden'));
+            notificationActionsEl.appendChild(closeButton);
+        }
+
+        notificationModal.classList.remove('hidden');
+    };
+
+    // === STATE MANIPULATION FUNCTIONS ===
+    const addTransaction = (description, amount, type, pocketName = null) => {
+        const transaction = {
+            id: Date.now(),
+            date: Date.now(),
+            description,
+            amount,
+            type, // 'income', 'expense', 'transfer', 'adjustment'
+            pocketName
+        };
+        state.transactions.unshift(transaction);
+    };
+
+    const editMainBalance = (newBalance) => {
+        const difference = newBalance - state.mainBalance;
+        state.mainBalance = newBalance;
+        addTransaction('Penyesuaian Saldo', Math.abs(difference), 'adjustment');
+        render();
+    };
+
+    const addIncome = (amount, note) => {
+        state.mainBalance += amount;
+        addTransaction(note || 'Pemasukan', amount, 'income');
+        render();
+    };
+
+    const addPocket = (name, type, value) => {
+        if (!name.trim()) { showNotification('Nama kantong tidak boleh kosong.'); return; }
+        const newPocket = {
+            id: Date.now(),
+            name,
+            balance: 0,
+            type, // 'spending' or 'saving'
+            budget: type === 'spending' ? (value || null) : null,
+            goal: type === 'saving' ? (value || null) : null,
+        };
+        state.pockets.push(newPocket);
+        addTransaction(`Buat kantong: ${name}`, 0, 'transfer');
+        render();
+    };
+    
+    const deletePocket = (pocketId) => {
+        const pocket = state.pockets.find(p => p.id === pocketId);
+        if (pocket) {
+            state.mainBalance += pocket.balance; // Return balance to main
+            addTransaction(`Hapus kantong: ${pocket.name}`, pocket.balance, 'transfer', 'Kantong Utama');
+            state.pockets = state.pockets.filter(p => p.id !== pocketId);
+            render();
+        }
+    };
+
+    const allocateToPocket = (pocketId, amount) => {
+        if (amount > state.mainBalance) { showNotification('Saldo utama tidak mencukupi!'); return; }
+        const pocket = state.pockets.find(p => p.id === pocketId);
+        if (pocket) {
+            state.mainBalance -= amount;
+            pocket.balance += amount;
+            addTransaction(`Alokasi ke ${pocket.name}`, amount, 'transfer');
+            render();
+        }
+    };
+
+    const spendFromPocket = (pocketId, amount, note) => {
+        const pocket = state.pockets.find(p => p.id === pocketId);
+        if (pocket) {
+            if (amount > pocket.balance) { showNotification(`Saldo di kantong ${pocket.name} tidak mencukupi!`); return; }
+            pocket.balance -= amount;
+            addTransaction(note || `Pengeluaran dari ${pocket.name}`, amount, 'expense', pocket.name);
+            render();
+        }
+    };
+    
+    const resetAllData = () => {
+        state = JSON.parse(JSON.stringify(initialState));
+        localStorage.removeItem('moneyManagementStatePro');
+        render();
+        showNotification('Semua data berhasil direset.');
+    };
+    
+    // === RENDER FUNCTIONS ===
+    const renderPockets = () => {
+        pocketsContainer.innerHTML = '';
+        if (state.pockets.length === 0) {
+            pocketsContainer.innerHTML = `<p class="text-gray-400 md:col-span-2 text-center">Belum ada kantong. Ayo buat satu!</p>`;
+            return;
+        }
+        state.pockets.forEach(pocket => {
+            let progressHTML = '';
+            let detailsHTML = '';
+
+            if (pocket.type === 'spending' && pocket.budget) {
+                const percentage = Math.min((pocket.balance / pocket.budget) * 100, 100);
+                const color = percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-yellow-500' : 'bg-blue-500';
+                detailsHTML = `<p class="text-sm text-gray-400">Budget: ${formatCurrency(pocket.budget)}</p>`;
+                progressHTML = `
+                    <div class="w-full progress-bg rounded-full h-2.5">
+                        <div class="${color} h-2.5 rounded-full progress-bar" style="width: ${percentage}%"></div>
+                    </div>`;
+            } else if (pocket.type === 'saving' && pocket.goal) {
+                const percentage = Math.min((pocket.balance / pocket.goal) * 100, 100);
+                detailsHTML = `<p class="text-sm text-gray-400">Tujuan: ${formatCurrency(pocket.goal)}</p>`;
+                progressHTML = `
+                    <div class="w-full progress-bg rounded-full h-2.5">
+                        <div class="bg-green-500 h-2.5 rounded-full progress-bar" style="width: ${percentage}%"></div>
+                    </div>`;
+            }
+
+            const pocketCard = document.createElement('div');
+            pocketCard.className = 'card flex flex-col justify-between space-y-4';
+            pocketCard.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="text-xl font-semibold">${pocket.name}</h3>
+                            ${detailsHTML}
+                        </div>
+                        <button data-action="delete" data-id="${pocket.id}" class="text-gray-400 hover:text-red-500 transition-colors">&times;</button>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-400 mb-2">${formatCurrency(pocket.balance)}</p>
+                    ${progressHTML}
+                </div>
+                <div class="space-y-3 mt-auto">
+                    <form class="flex items-center gap-2" data-action="allocate" data-id="${pocket.id}">
+                        <input type="number" placeholder="Isi dari utama" class="form-input text-sm flex-grow" required min="1">
+                        <button type="submit" class="btn btn-primary btn-sm text-sm">Isi</button>
+                    </form>
+                    <form class="flex items-center gap-2" data-action="spend" data-id="${pocket.id}">
+                        <input type="text" placeholder="Catatan" class="form-input text-sm flex-grow">
+                        <input type="number" placeholder="Pakai" class="form-input text-sm w-28" required min="1">
+                        <button type="submit" class="btn btn-secondary btn-sm text-sm">Pakai</button>
+                    </form>
+                </div>`;
+            pocketsContainer.appendChild(pocketCard);
+        });
+    };
+
+    const renderTransactions = () => {
+        transactionsContainer.innerHTML = '';
+        if (state.transactions.length === 0) {
+            transactionsContainer.innerHTML = `<p class="text-gray-400 text-center">Belum ada transaksi.</p>`;
+            return;
+        }
+        state.transactions.forEach(tx => {
+            const isIncome = tx.type === 'income';
+            const isExpense = tx.type === 'expense';
+            const amountColor = isIncome ? 'text-green-400' : isExpense ? 'text-red-400' : 'text-gray-400';
+            const sign = isIncome ? '+' : isExpense ? '-' : '';
+
+            const txEl = document.createElement('div');
+            txEl.className = 'flex justify-between items-center text-sm';
+            txEl.innerHTML = `
+                <div>
+                    <p class="font-medium text-white">${tx.description}</p>
+                    <p class="text-xs text-gray-500">${formatDate(tx.date)} ${tx.pocketName ? `(${tx.pocketName})` : ''}</p>
+                </div>
+                <p class="font-semibold ${amountColor}">${sign} ${formatCurrency(tx.amount)}</p>
+            `;
+            transactionsContainer.appendChild(txEl);
+        });
+    };
+
+    const renderChart = () => {
+        if (pocketsChart) pocketsChart.destroy();
+        const totalPocketBalance = state.pockets.reduce((sum, p) => sum + p.balance, 0);
+        
+        if (state.pockets.length === 0 || totalPocketBalance === 0) {
+            chartCanvas.classList.add('hidden');
+            chartNoDataEl.classList.remove('hidden');
+            return;
+        }
+        chartCanvas.classList.remove('hidden');
+        chartNoDataEl.classList.add('hidden');
+
+        pocketsChart = new Chart(chartCanvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: state.pockets.map(p => p.name),
+                datasets: [{
+                    data: state.pockets.map(p => p.balance),
+                    backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#f97316', '#8b5cf6', '#ec4899', '#f59e0b', '#6366f1'],
+                    borderColor: '#1f2937', borderWidth: 2, hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { color: '#d1d5db' } },
+                    tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } }
+                }
+            }
+        });
+    };
+    
+    const render = () => {
+        mainBalanceEl.textContent = formatCurrency(state.mainBalance);
+        renderPockets();
+        renderTransactions();
+        renderChart();
+        saveState();
+    };
+
+    // === EVENT LISTENERS ===
+    editMainBalanceBtn.addEventListener('click', () => {
+        mainBalanceView.classList.add('hidden');
+        editMainBalanceForm.classList.remove('hidden');
+        editMainBalanceInput.value = state.mainBalance;
+        editMainBalanceInput.focus();
+    });
+
+    cancelEditMainBalanceBtn.addEventListener('click', () => {
+        mainBalanceView.classList.remove('hidden');
+        editMainBalanceForm.classList.add('hidden');
+    });
+
+    editMainBalanceForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newBalance = parseInt(editMainBalanceInput.value, 10);
+        if (!isNaN(newBalance) && newBalance >= 0) {
+            editMainBalance(newBalance);
+            mainBalanceView.classList.remove('hidden');
+            editMainBalanceForm.classList.add('hidden');
+        } else {
+            showNotification('Masukkan jumlah saldo yang valid.');
+        }
+    });
+    
+    addIncomeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const amount = parseInt(incomeAmountInput.value);
+        const note = incomeNoteInput.value;
+        if (amount > 0) {
+            addIncome(amount, note);
+            incomeAmountInput.value = '';
+            incomeNoteInput.value = '';
+        }
+    });
+    
+    autofillContainer.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON' && e.target.dataset.amount) {
+            const amount = e.target.dataset.amount;
+            incomeAmountInput.value = amount;
+            incomeAmountInput.focus();
+        }
+    });
+
+    addPocketForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = newPocketNameInput.value;
+        const type = document.querySelector('input[name="pocket-type"]:checked').value;
+        const value = type === 'spending' ? parseInt(newPocketBudgetInput.value) || null : parseInt(newPocketGoalInput.value) || null;
+        addPocket(name, type, value);
+        addPocketForm.reset();
+        // Reset radio button visual state
+        document.querySelector('label[for="type-spending"]').classList.add('active');
+        document.querySelector('label[for="type-saving"]').classList.remove('active');
+        budgetInputContainer.classList.remove('hidden');
+        goalInputContainer.classList.add('hidden');
+    });
+
+    // Toggle budget/goal input on add pocket form
+    document.querySelectorAll('input[name="pocket-type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const isSpending = e.target.value === 'spending';
+            budgetInputContainer.classList.toggle('hidden', !isSpending);
+            goalInputContainer.classList.toggle('hidden', isSpending);
+            document.querySelector('label[for="type-spending"]').classList.toggle('active', isSpending);
+            document.querySelector('label[for="type-saving"]').classList.toggle('active', !isSpending);
+        });
+    });
+
+    pocketsContainer.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const action = form.dataset.action;
+        const pocketId = parseInt(form.dataset.id);
+
+        if (action === 'allocate') {
+            const amount = parseInt(form.querySelector('input[type="number"]').value);
+            if(amount > 0) allocateToPocket(pocketId, amount);
+        } else if (action === 'spend') {
+            const amount = parseInt(form.querySelector('input[type="number"]').value);
+            const note = form.querySelector('input[type="text"]').value;
+            if(amount > 0) spendFromPocket(pocketId, amount, note);
+        }
+        form.reset();
+    });
+
+    pocketsContainer.addEventListener('click', (e) => {
+        if (e.target.dataset.action === 'delete') {
+            const pocketId = parseInt(e.target.dataset.id);
+            deletePocket(pocketId);
+        }
+    });
+
+    resetDataBtn.addEventListener('click', () => {
+        showNotification('Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak dapat dibatalkan.', [
+            { text: 'Hapus Semua', class: 'btn btn-danger mr-2', handler: resetAllData },
+            { text: 'Batal', class: 'btn btn-secondary', handler: () => {} }
+        ]);
+    });
+
+    closeNotificationBtn.addEventListener('click', () => notificationModal.classList.add('hidden'));
+    notificationModal.addEventListener('click', (e) => {
+        if (e.target === notificationModal) {
+            notificationModal.classList.add('hidden');
+        }
+    });
+
+    // === LOCAL STORAGE & INITIALIZATION ===
+    const saveState = () => {
+        localStorage.setItem('moneyManagementStatePro', JSON.stringify(state));
+    };
+
+    const loadState = () => {
+        const savedState = localStorage.getItem('moneyManagementStatePro');
+        if (savedState) {
+            const loaded = JSON.parse(savedState);
+            // Ensure all keys exist to prevent errors from old data structures
+            state.mainBalance = loaded.mainBalance || 0;
+            state.pockets = loaded.pockets || [];
+            state.transactions = loaded.transactions || [];
+        }
+    };
+
+    loadState();
+    render();
+});
+</script>
+</body>
+</html>
+
+
