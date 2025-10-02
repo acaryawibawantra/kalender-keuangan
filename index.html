@@ -58,7 +58,7 @@
         
         <footer class="text-center mt-16 text-sm text-gray-500">
             <p>Aplikasi ini dibuat untuk memudahkan pengelolaan jadwal kuliah.</p>
-            <p class="mt-1"><strong>Catatan:</strong> Perubahan dan penambahan jadwal hanya tersimpan selama halaman ini dibuka.</p>
+            <p class="mt-1"><strong>Catatan:</strong> Semua perubahan pada jadwal akan disimpan secara otomatis di browser Anda. <br>Tekan Tambah untuk menambahkan ke dalam Google Kalender anda.</p> <br>
             <p>Kalian bisa sesuaikan jadwal kalian sendiri dengan hapus jadwal semula</p> <br>
 
             <div class="text-center text-gray-400 border-t border-gray-300 pt-4">
@@ -120,13 +120,14 @@
             <div class="modal-content py-4 text-left px-6">
                 <div class="flex justify-between items-center pb-3"><p class="text-xl font-bold">Konfirmasi</p><div class="modal-close cursor-pointer z-50" onclick="closeConfirmModal()"><svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path></svg></div></div>
                 <p id="confirmText" class="text-base">Apakah Anda yakin ingin menghapus jadwal ini?</p>
-                <div class="flex justify-end pt-4"><button class="px-4 bg-transparent p-3 rounded-lg text-gray-600 hover:bg-gray-100 mr-2" onclick="closeConfirmModal()">Batal</button><button class="px-4 bg-red-500 p-3 rounded-lg text-white hover:bg-red-600" onclick="confirmDelete()">Hapus</button></div>
+                <div class="flex justify-end pt-4"><button class="px-4 bg-transparent p-3 rounded-lg text-gray-600 hover:bg-gray-100 mr-2" onclick="closeConfirmModal()">Batal</button><button class="px-4 bg-red-500 p-3 rounded-lg text-white hover:bg-red-600 " onclick="confirmDelete()">Hapus</button></div>
             </div>
         </div>
     </div>
 
     <script>
-        let allCourses = [
+        // Data jadwal default
+        let defaultCourses = [
             { id: 1, name: 'Kalkulus 1 (22)', code: 'SM234101', startTime: '11:00', endTime: '12:50', location: 'TW1-301', color: 'blue', type: 'kuliah', dayIndex: 1 },
             { id: 2, name: 'Dasar Pemrograman (D)', code: 'EF234101', startTime: '13:00', endTime: '15:00', location: 'TIF 103', color: 'green', type: 'kuliah', dayIndex: 2 },
             { id: 3, name: 'Sistem Digital (E)', code: 'EF234102', startTime: '15:30', endTime: '17:20', location: 'TIF 101', color: 'indigo', type: 'kuliah', dayIndex: 2 },
@@ -137,12 +138,30 @@
             { id: 8, name: 'Praktikum Sistem Basis Data', code: 'EF234104-P', startTime: '08:00', endTime: '10:00', location: 'Lab TIF', color: 'orange', type: 'praktikum', dayIndex: 6 }
         ];
 
+        let allCourses = [];
+
         const colorClasses = {
             blue: 'border-blue-500 bg-blue-50', green: 'border-green-500 bg-green-50', indigo: 'border-indigo-500 bg-indigo-50', red: 'border-red-500 bg-red-50', purple: 'border-purple-500 bg-purple-50', teal: 'border-teal-500 bg-teal-50', orange: 'border-orange-500 bg-orange-50', pink: 'border-pink-500 bg-pink-50', yellow: 'border-yellow-500 bg-yellow-50',
         };
         const newCourseColors = ['pink', 'yellow', 'teal', 'red', 'purple', 'indigo'];
         const dayMap = { 1: 'Senin', 2: 'Selasa', 3: 'Rabu', 4: 'Kamis', 5: 'Jumat', 6: 'Sabtu' };
+        
+        // --- Fungsi Penyimpanan ---
+        function saveCoursesToStorage() {
+            localStorage.setItem('myScheduleApp', JSON.stringify(allCourses));
+        }
 
+        function loadCoursesFromStorage() {
+            const savedCourses = localStorage.getItem('myScheduleApp');
+            if (savedCourses && savedCourses.length > 2) { // Check if not just an empty array "[]"
+                allCourses = JSON.parse(savedCourses);
+            } else {
+                allCourses = defaultCourses;
+            }
+        }
+
+
+        // --- Fungsi Utama ---
         function generateGoogleCalendarLink(course) {
             const rruleMap = { 1: 'MO', 2: 'TU', 3: 'WE', 4: 'TH', 5: 'FR', 6: 'SA' };
             const eventDate = new Date();
@@ -163,38 +182,138 @@
         function renderSchedule(type, container) {
             container.innerHTML = '';
             const groupedCourses = {};
-            allCourses.filter(c => c.type === type).forEach(course => { (groupedCourses[course.dayIndex] = groupedCourses[course.dayIndex] || []).push(course); });
+            allCourses.filter(c => c.type === type).forEach(course => { 
+                if (!groupedCourses[course.dayIndex]) {
+                    groupedCourses[course.dayIndex] = [];
+                }
+                groupedCourses[course.dayIndex].push(course);
+            });
+            
             const sortedDays = Object.keys(groupedCourses).sort((a,b) => a - b);
-            if (sortedDays.length === 0) { container.innerHTML = `<div class="text-center py-4 px-4 border-2 border-dashed rounded-lg text-gray-500">Tidak ada jadwal ${type}.</div>`; return; }
+            
+            if (sortedDays.length === 0) { 
+                container.innerHTML = `<div class="text-center py-4 px-4 border-2 border-dashed rounded-lg text-gray-500">Tidak ada jadwal ${type}.</div>`; 
+                return; 
+            }
+            
             sortedDays.forEach(dayIndex => {
                 const courses = groupedCourses[dayIndex].sort((a,b) => a.startTime.localeCompare(b.startTime));
                 let coursesHtml = courses.map(course => {
-                    const editButton = `<button onclick='openModal(${course.id})' class="mt-4 sm:mt-0 sm:ml-2 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-3 mx-2 border border-gray-300 rounded-lg shadow-sm text-xs">Ubah</button>`;
-                    const deleteButton = `<button onclick='deleteCourse(${course.id})' class="mt-4 sm:mt-0 sm:ml-2 flex-shrink-0 bg-red-100 hover:bg-red-200 text-red-800 font-semibold py-2 px-3  border border-red-300 rounded-lg shadow-sm text-xs">Hapus</button>`;
+                    const editButton = `<button onclick='openModal(${course.id})' class="mt-4 sm:mt-0 sm:ml-2 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold mx-2 py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-xs">Ubah</button>`;
+                    const deleteButton = `<button onclick='deleteCourse(${course.id})' class="mt-4 sm:mt-0 sm:ml-2 flex-shrink-0 bg-red-100 hover:bg-red-200 text-red-800 font-semibold py-2 px-3 border border-red-300 rounded-lg shadow-sm text-xs">Hapus</button>`;
                     return `<div class="course-card flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg shadow-sm border-l-4 ${colorClasses[course.color]}"><div class="flex-grow"><p class="font-bold text-lg">${course.name}</p><p class="text-sm text-gray-600">${course.code}</p><div class="flex items-center space-x-4 text-sm mt-2 text-gray-700"><div class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>${course.startTime} - ${course.endTime}</span></div><div class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span>${course.location}</span></div></div></div><div class="flex items-center"><button onclick='generateGoogleCalendarLink(${JSON.stringify(course)})' class="mt-4 sm:mt-0 sm:ml-4 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm flex items-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><span>Tambah</span></button>${editButton}${deleteButton}</div></div>`;
                 }).join('');
                 container.innerHTML += `<div class="day-section"><h3 class="text-xl font-semibold text-gray-700 mb-4">${dayMap[dayIndex]}</h3><div class="space-y-4">${coursesHtml}</div></div>`;
             });
         }
         
+        // --- Fungsi Modal ---
         const editModal = document.getElementById('editModal');
         const addModal = document.getElementById('addModal');
         const confirmModal = document.getElementById('confirmModal');
         let courseToDelete = null;
 
-        function openModal(id) { const c = allCourses.find(c=>c.id===id); if(c){ document.getElementById('editCourseId').value=c.id; document.getElementById('editName').value=c.name; document.getElementById('editDay').value=c.dayIndex; document.getElementById('editStartTime').value=c.startTime; document.getElementById('editEndTime').value=c.endTime; editModal.classList.remove('hidden'); document.body.classList.add('modal-active'); } }
-        function closeModal() { editModal.classList.add('hidden'); document.body.classList.remove('modal-active'); }
-        function saveChanges() { const id=parseInt(document.getElementById('editCourseId').value), i=allCourses.findIndex(c=>c.id===id); if(i>-1){ allCourses[i].name=document.getElementById('editName').value; allCourses[i].dayIndex=parseInt(document.getElementById('editDay').value); allCourses[i].startTime=document.getElementById('editStartTime').value; allCourses[i].endTime=document.getElementById('editEndTime').value; } closeModal(); renderAllSchedules(); }
-        
-        function openAddModal(type) { document.getElementById('addForm').reset(); document.getElementById('addCourseType').value=type; addModal.classList.remove('hidden'); document.body.classList.add('modal-active'); }
-        function closeAddModal() { addModal.classList.add('hidden'); document.body.classList.remove('modal-active'); }
-        function saveNewSchedule() { const name=document.getElementById('addName').value, startTime=document.getElementById('addStartTime').value, endTime=document.getElementById('addEndTime').value; if(!name||!startTime||!endTime){ document.getElementById('confirmText').textContent = 'Harap isi semua kolom yang diperlukan (Nama, Jam Mulai, Jam Selesai).'; confirmModal.querySelector('button[onclick="confirmDelete()"]').classList.add('hidden'); confirmModal.classList.remove('hidden'); return; } const newCourse={id:Date.now(), name:name, code:document.getElementById('addCode').value||'N/A', startTime:startTime, endTime:endTime, location:document.getElementById('addLocation').value||'N/A', color:newCourseColors[Math.floor(Math.random()*newCourseColors.length)], type:document.getElementById('addCourseType').value, dayIndex:parseInt(document.getElementById('addDay').value), manual:true}; allCourses.push(newCourse); closeAddModal(); renderAllSchedules(); }
-        
-        function deleteCourse(id) { courseToDelete=id; document.getElementById('confirmText').textContent="Apakah Anda yakin ingin menghapus jadwal ini?"; confirmModal.querySelector('button[onclick="confirmDelete()"]').classList.remove('hidden'); confirmModal.classList.remove('hidden'); document.body.classList.add('modal-active'); }
-        function closeConfirmModal() { confirmModal.classList.add('hidden'); document.body.classList.remove('modal-active'); courseToDelete=null; }
-        function confirmDelete() { if(courseToDelete!==null){ allCourses=allCourses.filter(c=>c.id!==courseToDelete); renderAllSchedules(); } closeConfirmModal(); }
+        function openModal(id) { 
+            const course = allCourses.find(c => c.id === id); 
+            if (course) { 
+                document.getElementById('editCourseId').value = course.id; 
+                document.getElementById('editName').value = course.name; 
+                document.getElementById('editDay').value = course.dayIndex; 
+                document.getElementById('editStartTime').value = course.startTime; 
+                document.getElementById('editEndTime').value = course.endTime; 
+                editModal.classList.remove('hidden'); 
+                document.body.classList.add('modal-active'); 
+            } 
+        }
 
-        document.addEventListener('DOMContentLoaded', renderAllSchedules);
+        function closeModal() { 
+            editModal.classList.add('hidden'); 
+            document.body.classList.remove('modal-active'); 
+        }
+        
+        function saveChanges() { 
+            const id = parseInt(document.getElementById('editCourseId').value);
+            const index = allCourses.findIndex(c => c.id === id); 
+            if (index > -1) { 
+                allCourses[index].name = document.getElementById('editName').value; 
+                allCourses[index].dayIndex = parseInt(document.getElementById('editDay').value); 
+                allCourses[index].startTime = document.getElementById('editStartTime').value; 
+                allCourses[index].endTime = document.getElementById('editEndTime').value; 
+            } 
+            closeModal(); 
+            renderAllSchedules(); 
+            saveCoursesToStorage();
+        }
+        
+        function openAddModal(type) { 
+            document.getElementById('addForm').reset(); 
+            document.getElementById('addCourseType').value = type; 
+            addModal.classList.remove('hidden'); 
+            document.body.classList.add('modal-active'); 
+        }
+
+        function closeAddModal() { 
+            addModal.classList.add('hidden'); 
+            document.body.classList.remove('modal-active'); 
+        }
+
+        function saveNewSchedule() { 
+            const name = document.getElementById('addName').value;
+            const startTime = document.getElementById('addStartTime').value;
+            const endTime = document.getElementById('addEndTime').value; 
+
+            if (!name || !startTime || !endTime) { 
+                document.getElementById('confirmText').textContent = 'Harap isi semua kolom yang diperlukan (Nama, Jam Mulai, Jam Selesai).'; 
+                confirmModal.querySelector('button[onclick="confirmDelete()"]').classList.add('hidden'); 
+                confirmModal.classList.remove('hidden'); 
+                return; 
+            } 
+            
+            const newCourse = {
+                id: Date.now(), 
+                name: name, 
+                code: document.getElementById('addCode').value || 'N/A', 
+                startTime: startTime, 
+                endTime: endTime, 
+                location: document.getElementById('addLocation').value || 'N/A', 
+                color: newCourseColors[Math.floor(Math.random()*newCourseColors.length)], 
+                type: document.getElementById('addCourseType').value, 
+                dayIndex: parseInt(document.getElementById('addDay').value)
+            }; 
+            
+            allCourses.push(newCourse); 
+            closeAddModal(); 
+            renderAllSchedules(); 
+            saveCoursesToStorage();
+        }
+        
+        function deleteCourse(id) { 
+            courseToDelete = id; 
+            document.getElementById('confirmText').textContent = "Apakah Anda yakin ingin menghapus jadwal ini?"; 
+            confirmModal.querySelector('button[onclick="confirmDelete()"]').classList.remove('hidden'); 
+            confirmModal.classList.remove('hidden'); 
+            document.body.classList.add('modal-active'); 
+        }
+
+        function closeConfirmModal() { 
+            confirmModal.classList.add('hidden'); 
+            document.body.classList.remove('modal-active'); 
+            courseToDelete = null; 
+        }
+
+        function confirmDelete() { 
+            if (courseToDelete !== null) { 
+                allCourses = allCourses.filter(c => c.id !== courseToDelete); 
+                renderAllSchedules(); 
+                saveCoursesToStorage();
+            } 
+            closeConfirmModal(); 
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCoursesFromStorage();
+            renderAllSchedules();
+        });
     </script>
 
 </body>
